@@ -17,6 +17,6 @@ def test_implied_volatility_calculation(black_scholes_object):
     option_price = 5.0
     is_call = True
     # Calculate implied volatility
-    implied_volatility = black_scholes_object.implied_volatility(black_scholes_object.args, option_price, is_call)
+    implied_volatility2 = black_scholes_object.implied_volatility(black_scholes_object.args, option_price, is_call)
     # Assert that implied volatility is within a reasonable range
-    assert 0 <= implied_volatility <= 200
+    assert 0 <= implied_volatility2 <= 200
