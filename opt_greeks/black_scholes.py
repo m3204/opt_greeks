@@ -144,11 +144,11 @@ class BlackScholes:
         dte = float(args[3] / 365)
         volatility_grid = np.linspace(0.001, 5, 10000)
         # volatility_grid = np.linspace(0.01, 5, 100)
-        option_prices = self.price_options_fft(spot, 
-                                               strike, 
-                                               dte, 
-                                               r, 
-                                               volatility_grid, 
+        option_prices = self.price_options_fft(spot,
+                                               strike,
+                                               dte,
+                                               r,
+                                               volatility_grid,
                                                is_call)
         # Interpolate option prices to find implied volatility
         interp_func = interp1d(option_prices, volatility_grid, kind='linear')
