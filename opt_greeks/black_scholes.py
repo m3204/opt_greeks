@@ -1,36 +1,35 @@
-
-import numpy as np
 from math import log, e
+import numpy as np
 from scipy.stats import norm
 from scipy.interpolate import interp1d
 
 '''
     # USING Markov chain 
-    def calculate_option_price(self, S, K, r, T, sigma, is_call):
-        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-        # d1 = (np.log(S / K) + (r + sigma ** 2) * T) / (sigma * np.sqrt(T))
+    def calculate_option_price(self, spot, strike, r, dte, sigma, is_call):
+        d1 = (np.log(spot / strike) + (r + 0.5 * sigma ** 2) * dte) / (sigma * np.sqrt(dte))
+        # d1 = (np.log(spot / strike) + (r + sigma ** 2) * dte) / (sigma * np.sqrt(dte))
 
-        d2 = d1 - sigma * np.sqrt(T)
+        d2 = d1 - sigma * np.sqrt(dte)
 
         if is_call:
-            option_price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+            option_price = spot * norm.cdf(d1) - strike * np.exp(-r * dte) * norm.cdf(d2)
         else:
-            option_price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            option_price = strike * np.exp(-r * dte) * norm.cdf(-d2) - spot * norm.cdf(-d1)
 
         return option_price
 
 
     def implied_volatility(self, args, option_price, is_call, tolerance=1e-6, max_iter=10000):
         iv = 0.5  # Initial guess for IV
-        S = float(args[0])
-        K = float(args[1])
+        spot = float(args[0])
+        strike = float(args[1])
         r = float(args[2] / 100)
-        T = float(args[3] / 365)
+        dte = float(args[3] / 365)
 
         for i in range(max_iter):
-            option_price_calculated = self.calculate_option_price(S, K, r, T, iv, is_call)
-            vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + 0.5 * iv ** 2) * T) / (iv * np.sqrt(T)))
-            # vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + iv ** 2) * T) / (iv * np.sqrt(T)))
+            option_price_calculated = self.calculate_option_price(spot, strike, r, dte, iv, is_call)
+            vega = spot * np.sqrt(dte) * norm.pdf((np.log(spot / strike) + (r + 0.5 * iv ** 2) * dte) / (iv * np.sqrt(dte)))
+            # vega = spot * np.sqrt(dte) * norm.pdf((np.log(spot / strike) + (r + iv ** 2) * dte) / (iv * np.sqrt(dte)))
 
             diff = option_price_calculated - option_price
             print(option_price_calculated)
@@ -44,13 +43,17 @@ from scipy.interpolate import interp1d
 class BlackScholes:
     def __init__(self, args, volatility = None, call_price = None, put_price = None):
         """
-        args = [S, K, r, T]
-        S = # Underlying asset price
-        K = # Strike price
-        r = # Risk-free rate
-        T = # Time to maturity
-        sigma = Volatility
+        Initializes BlackScholes class with the following arguments:
+
+        args = [spot, strike, r, dte]
+
+        spot: underlying asset price
+        strike: strike price
+        r: risk-free rate
+        dte: time to maturity
+        volatility: Volatility
         """
+        
         self.underlying_price, self.strike_price, self.interest_rate, self.days_to_expiration = args
         self.volatility = volatility
         self.args = args
@@ -87,32 +90,57 @@ class BlackScholes:
             self.exerciceProbability = norm.cdf(self._d2_)
     
     # FFT
-    def price_options_fft(self, S, K, T, r, volatility_grid, is_call):
+    def price_options_fft(self, spot, strike, dte, r, volatility_grid, is_call):
+        """
+        Implement FFT pricing for each volatility in the grid
+        """
         # Implement FFT pricing for each volatility in the grid
-        d1 = (np.log(S / K) + (r + 0.5 * volatility_grid ** 2) * T) / (volatility_grid * np.sqrt(T))
-        # d1 = (np.log(S / K) + (r + volatility_grid ** 2) * T) / (volatility_grid * np.sqrt(T))
+        d1 = (np.log(spot / strike) + (r + 0.5 * volatility_grid ** 2) * dte) / (volatility_grid * np.sqrt(dte))
+        # d1 = (np.log(spot / strike) + (r + volatility_grid ** 2) * dte) / (volatility_grid * np.sqrt(dte))
 
-        d2 = d1 - volatility_grid * np.sqrt(T)
+        d2 = d1 - volatility_grid * np.sqrt(dte)
 
         # if option_type == 'call':
         if is_call:
-            option_prices = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+            option_prices = spot * norm.cdf(d1) - strike * np.exp(-r * dte) * norm.cdf(d2)
         # elif option_type == 'put':
         elif not is_call:
-            option_prices = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+            option_prices = strike * np.exp(-r * dte) * norm.cdf(-d2) - spot * norm.cdf(-d1)
 
         return option_prices
 
     # Function to calculate implied volatility from option prices using FFT
     def implied_volatility(self, args, option_price, is_call):
+        """
+        Calculates the implied volatility of an option using the Black-Scholes model.
+
+        Args:
+            args (list): A list containing the following parameters:
+                - spot (float): The current stock price.
+                - strike (float): The strike price of the option.
+                - r (float): The risk-free interest rate.
+                - dte (float): The time to expiration in years.
+            option_price (float): The price of the option.
+            is_call (bool): Indicates whether the option is a call option (True) or a put option (False).
+
+        Returns:
+            float: The implied volatility of the option.
+
+        Raises:
+            Exception: If the implied volatility cannot be calculated, a default value of 1e-5 is returned.
+
+        Note:
+            This function uses the FFT method to price options for different volatilities and then interpolates
+            the option prices to find the implied volatility.
+        """
         # Price options for the given volatility grid
-        S = float(args[0])
-        K = float(args[1])
+        spot = float(args[0])
+        strike = float(args[1])
         r = float(args[2] / 100)
-        T = float(args[3] / 365)
+        dte = float(args[3] / 365)
         volatility_grid = np.linspace(0.001, 5, 10000)
         # volatility_grid = np.linspace(0.01, 5, 100)
-        option_prices = self.price_options_fft(S, K, T, r, volatility_grid, is_call)
+        option_prices = self.price_options_fft(spot, strike, dte, r, volatility_grid, is_call)
         # Interpolate option prices to find implied volatility
         interp_func = interp1d(option_prices, volatility_grid, kind='linear')
         # interp_func = interp1d(option_prices, volatility_grid, kind='next')
@@ -132,8 +160,7 @@ class BlackScholes:
             put = max(0.0, self.strike_price - self.underlying_price)
         if self.strike_price == 0:
             raise ZeroDivisionError('The strike price cannot be zero')
-        else:
-            call, put, a, d1, d2 = self.bs(self.args, self.volatility)
+        call, put, a, d1, d2 = self.bs(self.args, self.volatility)
         return [call, put, a, d1, d2]
 
     def _delta(self):
@@ -143,9 +170,8 @@ class BlackScholes:
             put = -1.0 if self.underlying_price < self.strike_price else 0.0
         if self.strike_price == 0:
             raise ZeroDivisionError('The strike price cannot be zero')
-        else:
-            call = norm.cdf(self._d1_)
-            put = -norm.cdf(-self._d1_)
+        call = norm.cdf(self._d1_)
+        put = -norm.cdf(-self._d1_)
         return [call, put]
 
     def _delta2(self):
@@ -155,10 +181,9 @@ class BlackScholes:
             put = 1.0 if self.underlying_price < self.strike_price else 0.0
         if self.strike_price == 0:
             raise ZeroDivisionError('The strike price cannot be zero')
-        else:
-            _b_ = e**-(self.interest_rate * self.days_to_expiration)
-            call = -norm.cdf(self._d2_) * _b_
-            put = norm.cdf(-self._d2_) * _b_
+        _b_ = e**-(self.interest_rate * self.days_to_expiration)
+        call = -norm.cdf(self._d2_) * _b_
+        put = norm.cdf(-self._d2_) * _b_
         return [call, put]
 
     def _vega(self):
@@ -167,9 +192,8 @@ class BlackScholes:
             return 0.0
         if self.strike_price == 0:
             raise ZeroDivisionError('The strike price cannot be zero')
-        else:
-            return self.underlying_price * norm.pdf(self._d1_) * \
-                    self.days_to_expiration**0.5 / 100
+        return self.underlying_price * norm.pdf(self._d1_) * \
+                self.days_to_expiration**0.5 / 100
 
     def _theta(self):
         '''Returns the option theta: [Call theta, Put theta]'''
@@ -203,13 +227,13 @@ class BlackScholes:
 
     def bs(self, args, sigma):
         '''call put value'''
-        S, K, r, T = args
+        spot, strike, r, dte = args
         r = float(r) / 100
-        T = float(T) / 365
+        dte = float(dte) / 365
         sigma = float(sigma) / 100
-        a = sigma * (T ** 0.5)
-        d1 = (log(S / K) + (r + (sigma**2) / 2) * T) / a
+        a = sigma * (dte ** 0.5)
+        d1 = (log(spot / strike) + (r + (sigma**2) / 2) * dte) / a
         d2 = d1 - a
-        call = S * norm.cdf(d1) - K * e ** (-r * T) * norm.cdf(d2)
-        put = K * e ** (-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
+        call = spot * norm.cdf(d1) - strike * e ** (-r * dte) * norm.cdf(d2)
+        put = strike * e ** (-r * dte) * norm.cdf(-d2) - spot * norm.cdf(-d1)
         return call, put, a, d1, d2
