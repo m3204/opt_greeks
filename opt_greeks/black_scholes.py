@@ -15,10 +15,7 @@ from scipy.interpolate import interp1d
             option_price = spot * norm.cdf(d1) - strike * np.exp(-r * dte) * norm.cdf(d2)
         else:
             option_price = strike * np.exp(-r * dte) * norm.cdf(-d2) - spot * norm.cdf(-d1)
-
         return option_price
-
-
     def implied_volatility(self, args, option_price, is_call, tolerance=1e-6, max_iter=10000):
         iv = 0.5  # Initial guess for IV
         spot = float(args[0])
@@ -39,7 +36,6 @@ from scipy.interpolate import interp1d
 
         return iv
 '''
-
 class BlackScholes:
     def __init__(self, args, volatility = None, call_price = None, put_price = None):
         """
