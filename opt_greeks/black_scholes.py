@@ -1,30 +1,45 @@
-# import math
+
 import numpy as np
-# import numba as nb
 from math import log, e
 from scipy.stats import norm
-# from numba import types
 from scipy.interpolate import interp1d
 
-# from multiprocessing import Pool
-# from joblib import Parallel, delayed
-# import pandas as pd
-# Helper functions
-# @nb.njit
+'''
+    # USING Markov chain 
+    def calculate_option_price(self, S, K, r, T, sigma, is_call):
+        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        # d1 = (np.log(S / K) + (r + sigma ** 2) * T) / (sigma * np.sqrt(T))
 
-# def norm_cdf(x):
-#     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
+        d2 = d1 - sigma * np.sqrt(T)
 
+        if is_call:
+            option_price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
+        else:
+            option_price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
 
-
-
-
-
-
-
+        return option_price
 
 
+    def implied_volatility(self, args, option_price, is_call, tolerance=1e-6, max_iter=10000):
+        iv = 0.5  # Initial guess for IV
+        S = float(args[0])
+        K = float(args[1])
+        r = float(args[2] / 100)
+        T = float(args[3] / 365)
 
+        for i in range(max_iter):
+            option_price_calculated = self.calculate_option_price(S, K, r, T, iv, is_call)
+            vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + 0.5 * iv ** 2) * T) / (iv * np.sqrt(T)))
+            # vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + iv ** 2) * T) / (iv * np.sqrt(T)))
+
+            diff = option_price_calculated - option_price
+            print(option_price_calculated)
+            if abs(diff) < tolerance:
+                return iv
+            iv -= diff / vega
+
+        return iv
+'''
 
 class BlackScholes:
     def __init__(self, args, volatility = None, callPrice = None, putPrice = None):
@@ -40,9 +55,9 @@ class BlackScholes:
         self.volatility = volatility
         self.args = args
 
-        for i in ['callPrice', 'putPrice', 'callDelta', 'putDelta', \
-                'callDelta2', 'putDelta2', 'callTheta', 'putTheta', \
-                'callRhoD', 'putRhoD', 'callRhoF', 'callRhoF', 'vega', \
+        for i in ['callPrice', 'putPrice', 'callDelta', 'putDelta', 
+                'callDelta2', 'putDelta2', 'callTheta', 'putTheta', 
+                'callRhoD', 'putRhoD', 'callRhoF', 'callRhoF', 'vega', 
                 'gamma', 'impliedVolatility', 'putCallParity']:
             self.__dict__[i] = None
 
@@ -158,13 +173,9 @@ class BlackScholes:
         K = float(args[1])
         r = float(args[2] / 100)
         T = float(args[3] / 365)
-
         volatility_grid = np.linspace(0.001, 5, 10000)
         # volatility_grid = np.linspace(0.01, 5, 100)
-
-
         option_prices = self.price_options_fft(S, K, T, r, volatility_grid, is_call)
-        
         # Interpolate option prices to find implied volatility
         interp_func = interp1d(option_prices, volatility_grid, kind='linear')
         # interp_func = interp1d(option_prices, volatility_grid, kind='next')
@@ -176,44 +187,6 @@ class BlackScholes:
             print('No IV', e)
             implied_volatility = 1e-5
         return implied_volatility
-
-
-    '''
-    # USING Markov chain 
-    def calculate_option_price(self, S, K, r, T, sigma, is_call):
-        d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-        # d1 = (np.log(S / K) + (r + sigma ** 2) * T) / (sigma * np.sqrt(T))
-
-        d2 = d1 - sigma * np.sqrt(T)
-
-        if is_call:
-            option_price = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
-        else:
-            option_price = K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
-
-        return option_price
-
-
-    def implied_volatility(self, args, option_price, is_call, tolerance=1e-6, max_iter=10000):
-        iv = 0.5  # Initial guess for IV
-        S = float(args[0])
-        K = float(args[1])
-        r = float(args[2] / 100)
-        T = float(args[3] / 365)
-
-        for i in range(max_iter):
-            option_price_calculated = self.calculate_option_price(S, K, r, T, iv, is_call)
-            vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + 0.5 * iv ** 2) * T) / (iv * np.sqrt(T)))
-            # vega = S * np.sqrt(T) * norm.pdf((np.log(S / K) + (r + iv ** 2) * T) / (iv * np.sqrt(T)))
-
-            diff = option_price_calculated - option_price
-            print(option_price_calculated)
-            if abs(diff) < tolerance:
-                return iv
-            iv -= diff / vega
-
-        return iv
-    '''
     
     def _price(self):
         '''Returns the option price: [Call price, Put price]'''
@@ -297,251 +270,14 @@ class BlackScholes:
                 (self.strikePrice / \
                 ((1 + self.interestRate)**self.daysToExpiration))
 
-
-    # bs_signature = types.Tuple((types.float64, types.float64))(
-    #     types.UniTuple(types.float64, 4),
-    #     types.float64
-    # )
-        
-    # @nb.njit(bs_signature)
-    # @nb.jit(nopython=True)
     def bs(self, args, sigma):
         S, K, r, T = args
-        # S= args[0]
-        # K = args[1]
-        # r = float(args[2]) / 100
-        # T = float(args[3]) / 365
-
         r = float(r) / 100
         T = float(T) / 365
-        # print(S, K, r, T)
-
         sigma = float(sigma) / 100
         a = sigma * (T ** 0.5)
         d1 = (log(S / K) + (r + (sigma**2) / 2) * T) / a
         d2 = d1 - a
-        # call = S * norm_cdf(d1) - K * e ** (-r * T) * norm_cdf(d2)
-        # put = K * e ** (-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1)
         call = S * norm.cdf(d1) - K * e ** (-r * T) * norm.cdf(d2)
         put = K * e ** (-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
         return call, put, a, d1, d2
-
-
-
-# argss = (1.4565, 1.45, 1, 30)
-# call_price = 0.0359
-# put_price = 5.0
-
-# low, high = 0.0, 500.0
-# decimals = len(str(call_price).split('.')[1])
-
-# import pandas as pd
-# rs = pd.Series(Parallel()(delayed(mid_calc_func)(bs, argss, call_price, True) for i in range(10000))).dropna().drop_duplicates().values[0]
-
-
-
-# def gk(args, sigma):
-#     S, K, r_d, r_f, T = args
-#     r = float(r_d) / 100
-#     T = float(T) / 365
-#     sigma *= np.sqrt(T)
-#     d1 = (log(S / K) + (r_d - r_f + sigma**2 / 2) * T) / sigma
-#     d2 = d1 - sigma
-#     call = np.exp(-r_f * T) * S * norm_cdf(d1) - np.exp(-r_d * T) * K * norm_cdf(d2)
-#     put = np.exp(-r_d * T) * K * norm_cdf(-d2) - np.exp(-r_f * T) * S * norm_cdf(-d1)
-#     return call, put
-
-
-# def me(args, sigma):
-#     S, K, r, q, T = args
-#     T /= 365.0
-#     sigma *= np.sqrt(T)
-#     d1 = (np.log(S / K) + (r - q + sigma**2 / 2) * T) / sigma
-#     d2 = d1 - sigma
-#     call = np.exp(-q * T) * S * norm_cdf(d1) - np.exp(-r * T) * K * norm_cdf(d2)
-#     put = np.exp(-r * T) * K * norm_cdf(-d2) - np.exp(-q * T) * S * norm_cdf(-d1)
-#     return call, put
-
-
-
-
-
-'''
-
-# Example usage
-
-
-# GK model
-gk_iv_call = implied_volatility(gk, args, call_price)
-gk_iv_put = implied_volatility(gk, args, put_price)
-
-# BS model
-argss = (1.4565, 1.45, 1, 30)
-args = (1.4565, 1.45, 1, 0.02, 30)
-bs_iv_call = implied_volatility(bs, (float(args[0]), float(args[1]), float(args[2]), float(args[4])), call_price, True)
-bs_iv_put = implied_volatility(bs, (float(args[0]), float(args[1]), float(args[2]), float(args[3]), float(args[4])), put_price)
-
-# Me model
-me_iv_call = implied_volatility(me, (args[0], args[1], args[2], args[3], args[4]), call_price)
-me_iv_put = implied_volatility(me, (args[0], args[1], args[2], args[3], args[4]), put_price)
-
-
-
-BS([1.4565, 1.45, 1, 30], callPrice = 0.0359).impliedVolatility
-
-
-import numpy as np
-from numba import jit
-
-@jit(nopython=True)
-def black_scholes_call(S, K, r, T, sigma):
-    """
-    Calculate the Black-Scholes call option price
-    """
-    d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-    d2 = d1 - sigma * np.sqrt(T)
-    return S * np.exp(-r * T) * norm_cdf(d1) - K * np.exp(-r * T) * norm_cdf(d2)
-
-@jit(nopython=True)
-def norm_cdf(x):
-    """
-    Calculate the cumulative distribution function of the standard normal distribution
-    """
-    return (1.0 + np.erf(x / np.sqrt(2.0))) / 2.0
-
-@jit(nopython=True)
-def implied_volatility(S, K, r, T, C, sigma_guess=0.2, max_iter=100, tol=1e-6):
-    """
-    Calculate the implied volatility of an option using the Black-Scholes model
-    """
-    for i in range(max_iter):
-        sigma = sigma_guess
-        diff = black_scholes_call(S, K, r, T, sigma) - C
-        if abs(diff) < tol:
-            return sigma
-        vega = S * np.sqrt(T) * norm_cdf(d1(S, K, r, T, sigma))
-        sigma_guess -= diff / vega
-    raise ValueError("Failed to converge")
-
-def d1(S, K, r, T, sigma):
-    """
-    Calculate the d1 parameter in the Black-Scholes formula
-    """
-    return (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-
-
-
-
-
-# Input parameters
-underlying_price = 1.4565  # Underlying asset price
-strike_price = 1.45  # Strike price
-interest_rate = 1  # Risk-free interest rate
-days_to_expiry = 30  # Days to expiry
-call_price = 0.0359  # Call option price
-
-# Convert days to years
-time_to_expiry = days_to_expiry / 365.0
-
-# Calculate implied volatility
-implied_vol = implied_volatility(underlying_price, strike_price, interest_rate, time_to_expiry, call_price)
-
-print(f"Implied volatility: {implied_vol:.4f}")
-
-
-'''
-
-
-
-'''
-
-
-import numpy as np
-from numba import jit, njit
-from math import erf, sqrt, log, exp
-
-def black_scholes_call(S, K, r, T, sigma):
-    """
-    Calculate the Black-Scholes call option price
-    """
-    # d1 = (np.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))
-    # d2 = d1 - sigma * np.sqrt(T)
-    # return S * np.exp(-r * T) * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
-
-    sigma = float(sigma) / 100
-    a = sigma * (T ** 0.5)
-    d1 = (log(S / K) + (r + (sigma**2) / 2) * T) / a
-    d2 = d1 - a
-
-    call = S * norm.cdf(d1) - K * e ** (-r * T) * norm.cdf(d2)
-    put = K * e ** (-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
-
-    return call, put
-
-
-def norm_cdf(x):
-    """
-    Calculate the cumulative distribution function of the standard normal distribution
-    """
-    return (1.0 + erf(x / np.sqrt(2.0))) / 2.0
-
-
-def implied_volatility(args, C, is_call, tol=1e-6, sigma_low=0.0, sigma_high=500.0):
-    """
-    Calculate the implied volatility of an option using the Black-Scholes model
-    """
-    S = args[0]
-    K = args[1]
-    r = args[2] / 100
-    T = args[3] / 365
-    # sigma_guess = 
-    # price_low = black_scholes_call(S, K, r, T, sigma_low)
-    # price_high = black_scholes_call(S, K, r, T, sigma_high)
-    decimals = len(str(C).split('.')[1])
-    condition = sigma_high - sigma_low > tol
-    sigma_guess = np.where(condition, (sigma_low + sigma_high) / 2, 0)
-    call, put = black_scholes_call(S, K, r, T, sigma_guess)
-    price_guess = call if is_call else put
-
-    sigma_low = np.where(price_guess < C, sigma_guess, sigma_low)
-    # price_low = np.where(price_guess < C, price_guess, price_low)
-
-    sigma_high = np.where(price_guess >= C, sigma_guess, sigma_high)
-    # price_high = np.where(price_guess >= C, price_guess, price_high)
-
-    condition = sigma_high - sigma_low > tol
-    while np.any(condition):
-        
-        sigma_guess = np.where(condition, (sigma_low + sigma_high) / 2, sigma_guess)
-        call, put = black_scholes_call(S, K, r, T, sigma_guess)
-        price_guess = call if is_call else put
-        if round(price_guess, decimals) == C:
-            break
-        sigma_low = np.where(np.logical_and(condition, price_guess < C), sigma_guess, sigma_low)
-        # price_low = np.where(np.logical_and(condition, price_guess < C), price_guess, price_low)
-
-        sigma_high = np.where(np.logical_and(condition, price_guess >= C), sigma_guess, sigma_high)
-        # price_high = np.where(np.logical_and(condition, price_guess >= C), price_guess, price_high)
-
-        condition = sigma_high - sigma_low > tol
-
-    return sigma_guess
-
-args = (1.4565, 1.45, 1, 30, 0.0359)
-callPrice = 0.0359
-
-implied_volatility(args, C = callPrice, is_call=True)
-
-
-
-'''
-
-
-
-
-
-
-
-
-
-
