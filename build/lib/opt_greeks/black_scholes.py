@@ -63,13 +63,13 @@ class BlackScholes:
         if not self.volatility:
             if call_price:
                 self.call_price = call_price
-                self.implied_volatility = self.implied_volatility(args = self.args, 
+                self.implied_volatility = self.implied_volatility_func(args = self.args, 
                                                                   option_price = self.call_price, 
                                                                   is_call = True)
 
             if put_price and not call_price:
                 self.put_price = put_price
-                self.implied_volatility = self.implied_volatility(args = self.args, 
+                self.implied_volatility = self.implied_volatility_func(args = self.args, 
                                                                   option_price = self.put_price, 
                                                                   is_call = False)
 
@@ -110,7 +110,7 @@ class BlackScholes:
         return option_prices
 
     # Function to calculate implied volatility from option prices using FFT
-    def implied_volatility(self, args, option_price, is_call):
+    def implied_volatility_func(self, args, option_price, is_call):
         """
         Calculates the implied volatility of an 
         option using the Black-Scholes model.
