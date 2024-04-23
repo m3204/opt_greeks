@@ -1,7 +1,8 @@
 """
 Module for calculating option greeks.
 
-This module provides the `BlackScholes` class for calculating option greeks using the Black-Scholes model.
+This module provides the `BlackScholes` class for 
+calculating option greeks using the Black-Scholes model.
 
 :Example:
 
@@ -16,6 +17,8 @@ This module provides the `BlackScholes` class for calculating option greeks usin
 :Copyright: Copyright (c) 2022 Your Name
 :License: MIT
 """
+
+
 from .black_scholes import BlackScholes
 __version__ = '0.0.1'
 __all__ = ['BlackScholes']

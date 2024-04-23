@@ -22,18 +22,18 @@ from scipy.interpolate import interp1d
         strike = float(args[1])
         r = float(args[2] / 100)
         dte = float(args[3] / 365)
-
         for i in range(max_iter):
-            option_price_calculated = self.calculate_option_price(spot, strike, r, dte, iv, is_call)
-            vega = spot * np.sqrt(dte) * norm.pdf((np.log(spot / strike) + (r + 0.5 * iv ** 2) * dte) / (iv * np.sqrt(dte)))
-            # vega = spot * np.sqrt(dte) * norm.pdf((np.log(spot / strike) + (r + iv ** 2) * dte) / (iv * np.sqrt(dte)))
-
+            option_price_calculated = self.calculate_option_price(spot, 
+            strike, 
+            r, dte, iv, 
+            is_call)
+            vega =( spot * np.sqrt(dte) * norm.pdf((np.log(spot / strike) + 
+            (r + 0.5 * iv ** 2) * dte) / (iv * np.sqrt(dte))))
             diff = option_price_calculated - option_price
             print(option_price_calculated)
             if abs(diff) < tolerance:
                 return iv
             iv -= diff / vega
-
         return iv
 '''
 class BlackScholes:
@@ -63,13 +63,15 @@ class BlackScholes:
         if not self.volatility:
             if call_price:
                 self.call_price = call_price
-                # self.implied_volatility = self.implied_volatility(self.bs, self.args, self.call_price, True)
-                self.implied_volatility = self.implied_volatility(args = self.args, option_price = self.call_price, is_call = True)
+                self.implied_volatility = self.implied_volatility(args = self.args, 
+                                                                  option_price = self.call_price, 
+                                                                  is_call = True)
 
             if put_price and not call_price:
                 self.put_price = put_price
-                # self.implied_volatility = self.implied_volatility(self.bs, self.args, self.put_price, False)
-                self.implied_volatility = self.implied_volatility(args = self.args, option_price = self.put_price, is_call = False)
+                self.implied_volatility = self.implied_volatility(args = self.args, 
+                                                                  option_price = self.put_price, 
+                                                                  is_call = False)
 
             if call_price and put_price:
                 self.call_price = float(call_price)
@@ -90,15 +92,17 @@ class BlackScholes:
         """
         Implement FFT pricing for each volatility in the grid
         """
-        # Implement FFT pricing for each volatility in the grid
-        d1 = (np.log(spot / strike) + (r + 0.5 * volatility_grid ** 2) * dte) / (volatility_grid * np.sqrt(dte))
-        # d1 = (np.log(spot / strike) + (r + volatility_grid ** 2) * dte) / (volatility_grid * np.sqrt(dte))
+        d1 = ((np.log(spot / strike) + 
+               (r + 0.5 * volatility_grid ** 2) * dte) / 
+               (volatility_grid * np.sqrt(dte))
+               )
 
         d2 = d1 - volatility_grid * np.sqrt(dte)
 
         # if option_type == 'call':
         if is_call:
-            option_prices = spot * norm.cdf(d1) - strike * np.exp(-r * dte) * norm.cdf(d2)
+            option_prices = (spot * norm.cdf(d1) - 
+                             strike * np.exp(-r * dte) * norm.cdf(d2))
         # elif option_type == 'put':
         elif not is_call:
             option_prices = strike * np.exp(-r * dte) * norm.cdf(-d2) - spot * norm.cdf(-d1)
@@ -108,7 +112,8 @@ class BlackScholes:
     # Function to calculate implied volatility from option prices using FFT
     def implied_volatility(self, args, option_price, is_call):
         """
-        Calculates the implied volatility of an option using the Black-Scholes model.
+        Calculates the implied volatility of an 
+        option using the Black-Scholes model.
 
         Args:
             args (list): A list containing the following parameters:
@@ -117,16 +122,19 @@ class BlackScholes:
                 - r (float): The risk-free interest rate.
                 - dte (float): The time to expiration in years.
             option_price (float): The price of the option.
-            is_call (bool): Indicates whether the option is a call option (True) or a put option (False).
+            is_call (bool): Indicates whether the option is a call 
+            option (True) or a put option (False).
 
         Returns:
             float: The implied volatility of the option.
 
         Raises:
-            Exception: If the implied volatility cannot be calculated, a default value of 1e-5 is returned.
+            Exception: If the implied volatility cannot be calculated, 
+            a default value of 1e-5 is returned.
 
         Note:
-            This function uses the FFT method to price options for different volatilities and then interpolates
+            This function uses the FFT method to price options for 
+            different volatilities and then interpolates
             the option prices to find the implied volatility.
         """
         # Price options for the given volatility grid
@@ -136,7 +144,12 @@ class BlackScholes:
         dte = float(args[3] / 365)
         volatility_grid = np.linspace(0.001, 5, 10000)
         # volatility_grid = np.linspace(0.01, 5, 100)
-        option_prices = self.price_options_fft(spot, strike, dte, r, volatility_grid, is_call)
+        option_prices = self.price_options_fft(spot, 
+                                               strike, 
+                                               dte, 
+                                               r, 
+                                               volatility_grid, 
+                                               is_call)
         # Interpolate option prices to find implied volatility
         interp_func = interp1d(option_prices, volatility_grid, kind='linear')
         # interp_func = interp1d(option_prices, volatility_grid, kind='next')
